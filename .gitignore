@@ -1,0 +1,7 @@
+/build
+*.dll
+*.wad
+*.txt
+*.img
+*.exe
+*.zip
