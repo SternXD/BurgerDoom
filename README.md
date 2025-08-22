@@ -16,6 +16,9 @@ What I've done is:
 
 Wrote a 3DO internal ticrate of 60hz and according to 3DO specs, most games will auto-clamp to a 28/30hz tic inside of the 3DO's tic.  So this means logic is 60/2 and this is why the 3DO Doom logic is inherently 'faster', to make up for the slower tic..  otherwise it'll be too fast since we need to cleanly divide 60.  Clamping at 35 would result in logic mismatch.
 
+The 3DO itself never clamped tics itself, it would run strictly on a 1 tick per frame, thus keeping itself synched every new frame, if we did it like this on PC, it would run at 60fps and so would all game logic.  It is 
+one of the few things that cannot be 'exactly' emulated.
+
 Fixed doomguy's face!  the 3DO version uses a 16bit integer calculation for doomguy's facial expressions, not 32bit.  So this was restructured.
 
 Fixed all internal logic to cleanly divide by 3DO tic to game tic, so doors, plats, ceilings, etc..  will all run at the tic they were designed for.
