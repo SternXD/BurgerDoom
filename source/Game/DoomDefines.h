@@ -18,7 +18,8 @@ static constexpr uint32_t   MAXSCREENWIDTH  = 280;                  // Maximum w
 static constexpr Fixed      VIEWHEIGHT      = 41 * FRACUNIT;        // Height to render from
 
 // Gameplay/simulation related constants
-static constexpr uint32_t   TICKSPERSEC     = 60;                           // The game timebase (ticks per second)
+static constexpr uint32_t   TICKSPERSEC     = 60;                           // 3DO timebase
+static constexpr uint32_t   SIM_TICKS_PER_SEC = 30;                        // Simulation steps per second (target)                           // The game timebase (ticks per second)
 static constexpr float      SECS_PER_TICK   = 1.0f / (float) TICKSPERSEC;   // The number of seconds per tick
 static constexpr uint32_t   MAPBLOCKSHIFT   = FRACBITS + 7;                 // Shift value to convert Fixed to 128 pixel blocks
 static constexpr Fixed      ONFLOORZ        = FRACMIN;                      // Attach object to floor with this z

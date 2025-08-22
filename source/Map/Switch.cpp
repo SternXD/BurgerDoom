@@ -56,7 +56,7 @@ static void T_Button(button_t& button) noexcept {
 
     // Do buttons
     if (button.btimer > 1) {    // Time up?
-        --button.btimer;        // Adjust timer
+        button.btimer -= gElapsedTime;        // Adjust timer
     } else {
         line_t& line = *button.line;
         side_t& side = *line.SidePtr[0];    // Get the side record

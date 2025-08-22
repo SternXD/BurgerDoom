@@ -6,12 +6,24 @@ A backport & remaster of 3DO DOOM for Windows, MacOS and Linux.
 
 BURGER DOOM is a project derived from the [3DO DOOM source code release by Rebecca Ann Heineman](https://github.com/Olde-Skuul/doom3do) and the Phoenix Doom project. The aim of this project is to allow the original 3DO version of DOOM to be played on modern operating systems.
 
-See the following documents for more info on the project:
+## What makes this different from PheonixDoom?
 
-- [How To Play & Configuring](docs/How%20To%20Play.md)
-- [Differences To 3DO DOOM](docs/Differences%20To%203DO%20DOOM.md)
-- [Q&A / About The Project](docs/Q%26A.md)
-- [Known Issues](docs/Known%20Issues.md)
-- [Credits](docs/Credits.md)
-- [License / Copyright](docs/License%20%26%20Copyright.md)
-- [Building The Code / Development](docs/Building%20The%20Code.md)
+Well for one, it is actually playable :)
+
+PheonixDoom had so many issues..  it was a quick and dirty port.  It was not simulating the 3DO internal ticrate, obeying 3DO logic or even bothering to ensure it was a playable experience.
+
+What I've done is:
+
+Wrote a 3DO internal ticrate of 60hz and according to 3DO specs, most games will auto-clamp to a 28/30hz tic inside of the 3DO's tic.  So this means logic is 60/2 and this is why the 3DO Doom logic is inherently 'faster', to make up for the slower tic..  otherwise it'll be too fast since we need to cleanly divide 60.  Clamping at 35 would result in logic mismatch.
+
+Fixed doomguy's face!  the 3DO version uses a 16bit integer calculation for doomguy's facial expressions, not 32bit.  So this was restructured.
+
+Fixed all internal logic to cleanly divide by 3DO tic to game tic, so doors, plats, ceilings, etc..  will all run at the tic they were designed for.
+
+Experimental PWAD loading (CRASHES DOES NOT WORK) but I did get some loading working, however it was fighting against the REZFILE.
+
+You may experience a slightly 'faster' or 'slower' game than traditional DOOM, and that's because we're simulating the 3DO here.  It'll randomly flip between 28/30 tics as that is what most games did..  so the pistol will be a bit slower, but doors will be slightly faster..  gamers would have noticed this too, if the 3DO ran Doom at this framerate.
+
+All very fun and I enjoyed it!
+
+-Gibbon

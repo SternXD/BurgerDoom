@@ -24,7 +24,7 @@ struct floormove_t {
 Gibbon - again, we reduce this from * 3 to * 1 (twice as slow)
 as the stairs would raise or lower at lightspeed.
 */
-static constexpr Fixed FLOORSPEED = FRACUNIT * 1;    // Standard floor motion speed
+static constexpr Fixed FLOORSPEED = 3 << FRACBITS;    // Standard floor motion speed
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 // Move a plane (floor or ceiling) and check for crushing Called by Doors.c, Plats.c, Ceilng.c and Floor.c.

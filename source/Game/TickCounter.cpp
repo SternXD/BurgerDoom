@@ -11,7 +11,10 @@ BEGIN_NAMESPACE(TickCounter)
 static constexpr int64_t MAX_TICKS_TO_SIMULATE = 10;
 
 // This is the number of nanoseconds per tick
-static constexpr int64_t NS_PER_TICK = 1000000000 / TICKSPERSEC;
+// atsb: Don't know why bob wasn't doing this but instead letting it run at 60hz
+// 3DO has internal behaviour that locks to 28/30 but runs at 60hz for its own tic (one tick per frame)
+// THIS IS THE CORRECT WAY!  Otherwise everything runs too fast.
+static constexpr int64_t NS_PER_TICK = 1000000000 / SIM_TICKS_PER_SEC;
 
 // If are short of a full tick but this far along then allow a simulation frame to proceed.
 // This anticipates that draw will be very expensive so it's best to simulate the tick ahead of time.

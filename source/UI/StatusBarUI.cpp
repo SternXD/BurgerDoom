@@ -1,4 +1,5 @@
 #include "StatusBarUI.h"
+#include "Game/Tick.h"
 
 #include "Audio/Sound.h"
 #include "Audio/Sounds.h"
@@ -82,7 +83,7 @@ stbar_t gStBar;      // Current state of the status bar
 static const CelImage*          gpStatusBarShape;           // Handle to current status bar shape
 static const CelImageArray*     gpSBObj;                    // Cached handle to the status bar sub shapes
 static const CelImageArray*     gpFaces;                    // Cached handle to the faces
-static uint32_t                 gFaceTics;                  // Time before animating the face
+static uint16_t                 gFaceTics;                  // Time before animating the face
 static uint32_t                 gNewFace;                   // Which normal face to show
 static sbflash_t                gFlashCards[NUMCARDS];      // Info for flashing cards & Skulls
 static bool                     gGibDraw;                   // Got gibbed?
@@ -95,7 +96,7 @@ static uint32_t                 gGibDelay;                  // Delay for gibbing
 static void CycleFlash(sbflash_t& flash) noexcept {
     if (flash.delay) {              // Active?
         if (flash.delay > 1) {      // Still time?
-            --flash.delay;          // Remove the time
+            flash.delay = (flash.delay > gElapsedTime) ? (flash.delay - gElapsedTime) : 0;          // Remove the time
         } else {
             if (--flash.times == 0) {               // Can I still go?
                 flash.delay = 0;
@@ -121,6 +122,8 @@ void ST_Start() noexcept {
 
     memset(&gStBar, 0, sizeof(gStBar));                 // Reset the status bar
     gFaceTics = 0;                                      // Reset the face tic count
+    gNewFace = 0;
+    gGibFrame = 0;
     gGibDraw = false;                                   // Don't draw gibbed head sequence
     memset(&gFlashCards, 0, sizeof(gFlashCards));
 }
@@ -139,10 +142,11 @@ void ST_Stop() noexcept {
 //------------------------------------------------------------------------------------------------------------------------------------------
 void ST_Ticker() noexcept {
     // Animate face
-    --gFaceTics;                                // Count down
+    // atsb: 3DO face ticker uses 16bit not 32bit!!!
+    gFaceTics = (uint16_t)(gFaceTics - (uint16_t)gElapsedTime);                                // Count down
     if (gFaceTics & 0x8000) {                   // Negative?
-        gFaceTics = Random::nextU32(15)*4;      // New random value
-        gNewFace = Random::nextU32(2);          // Which face 0-2
+        gFaceTics = Random::nextU16(15)*4;      // New random value
+        gNewFace = Random::nextU16(2);          // Which face 0-2
     }
 
     // Draw special face?

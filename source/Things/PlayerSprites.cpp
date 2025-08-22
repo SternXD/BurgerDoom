@@ -1,4 +1,5 @@
 #include "PlayerSprites.h"
+#include "Game/Tick.h"
 
 #include "Audio/Audio.h"
 #include "Audio/Sound.h"
@@ -603,7 +604,7 @@ void MovePSprites(player_t& player) noexcept {
     for (uint32_t i = 0; i < NUMPSPRITES; ++i) {
         if (psp->Time != UINT32_MAX) {      // Never change state?
             if (psp->Time > 1) {            // Has enough time elapsed?
-                --psp->Time;
+                psp->Time = (psp->Time > gElapsedTime) ? (psp->Time - gElapsedTime) : 0;
             } else {
                 SetPlayerSprite(player, (psprnum_e) i, psp->StatePtr->nextstate);   // Next state
             }

@@ -5,6 +5,7 @@
 #include "Base/Tables.h"
 #include "Game/Config.h"
 #include "Game/Data.h"
+#include "Game/Tick.h"
 #include "GFX/Renderer.h"
 #include "Info.h"
 #include "Map/Map.h"
@@ -63,8 +64,8 @@ static bool gbOnGround;     // True if the player is on the ground
 // Move the player along the momentum
 //------------------------------------------------------------------------------------------------------------------------------------------
 static void P_PlayerMove(mobj_t& mo) noexcept {
-    Fixed momx = mo.momx >> 2;      // Get the momemtum
-    Fixed momy = mo.momy >> 2;
+    Fixed momx = (mo.momx >> 2) * (Fixed) gElapsedTime;      // Get the momemtum scaled by elapsed 60Hz ticks
+    Fixed momy = (mo.momy >> 2) * (Fixed) gElapsedTime;
 
     // DC: added a noclip cheat
     if ((mo.flags & MF_NOCLIP) != 0) {
@@ -190,7 +191,7 @@ static void P_PlayerMobjThink(mobj_t& mobj) noexcept {
     // Cycle through states, calling action functions at transitions
     if (mobj.tics != UINT32_MAX) {
         if (mobj.tics > 1) {    // Time to cycle?
-            --mobj.tics;
+            mobj.tics = (mobj.tics > gElapsedTime) ? (mobj.tics - gElapsedTime) : 0;
             return;             // Not time to cycle yet
         }
 
@@ -218,7 +219,7 @@ static void P_BuildMove(player_t& player) noexcept {
     if (bCanMoveAndTurn) {
         // Use two stage accelerative turning on the joypad.
         // If none of the turn keys are pressed then reset acceleration.
-        uint32_t turnIndex = player.turnheld + 1;
+        uint32_t turnIndex = player.turnheld + gElapsedTime;
 
         const bool bResetTurnAcceleration = (
             (!GAME_ACTION(TURN_LEFT)) &&
@@ -254,7 +255,7 @@ static void P_BuildMove(player_t& player) noexcept {
         sideMoveFracF = std::min(sideMoveFracF, 1.0f);
 
         const Fixed sideMoveFrac = floatToFixed16(sideMoveFracF);
-        player.sidemove = fixed16Mul(sideMoveFrac, SIDE_MOVE[speedIndex]);
+        player.sidemove = fixed16Mul(sideMoveFrac, SIDE_MOVE[speedIndex]) * (Fixed) gElapsedTime;
 
         // Do turning
         float angleTurnFracF = -INPUT_AXIS(TURN_LEFT_RIGHT);
@@ -276,9 +277,9 @@ static void P_BuildMove(player_t& player) noexcept {
             (INPUT_AXIS(MOVE_FORWARD_BACK) == 0.0f) &&
             (INPUT_AXIS(STRAFE_LEFT_RIGHT) == 0.0f)
         ) {
-            player.angleturn = (angle_t) fixed16Mul(angleTurnFrac, FAST_ANGLE_TURN[turnIndex]);
+            player.angleturn = (angle_t) (fixed16Mul(angleTurnFrac, FAST_ANGLE_TURN[turnIndex]) * (Fixed) gElapsedTime);
         } else {
-            player.angleturn = (angle_t) fixed16Mul(angleTurnFrac, ANGLE_TURN[turnIndex]);
+            player.angleturn = (angle_t) (fixed16Mul(angleTurnFrac, ANGLE_TURN[turnIndex]) * (Fixed) gElapsedTime);
         }
 
         // Do move forward and backward
@@ -296,7 +297,7 @@ static void P_BuildMove(player_t& player) noexcept {
         forwardMoveFracF = std::min(forwardMoveFracF, 1.0f);
 
         const Fixed forwardMoveFrac = floatToFixed16(forwardMoveFracF);
-        player.forwardmove = fixed16Mul(forwardMoveFrac, FORWARD_MOVE[speedIndex]);
+        player.forwardmove = fixed16Mul(forwardMoveFrac, FORWARD_MOVE[speedIndex]) * (Fixed) gElapsedTime;
 
         // Debug camera movement
         if (Config::gbAllowDebugCameraUpDownMovement) {
@@ -483,7 +484,7 @@ static void P_DeathThink(player_t& player) noexcept {
     } else {
     DownDamage:
         if (player.damagecount) {                           // Fade down the redness on the screen
-            --player.damagecount;                           // Count down time
+            player.damagecount = (player.damagecount > gElapsedTime) ? (player.damagecount - gElapsedTime) : 0;                           // Count down time
             if ((player.damagecount & 0x8000) != 0) {       // Negative
                 player.damagecount=0;                       // Force zero
             }
@@ -640,7 +641,7 @@ void P_PlayerThink(player_t& player) noexcept {
     if (player.mo->reactiontime <= 0) {
         MoveThePlayer(player);
     } else {
-        --player.mo->reactiontime;
+        player.mo->reactiontime = (player.mo->reactiontime > gElapsedTime) ? (player.mo->reactiontime - gElapsedTime) : 0;
     }
 
     PlayerCalcHeight(player);      // Adjust the player's z coord
@@ -663,7 +664,7 @@ void P_PlayerThink(player_t& player) noexcept {
 
         // Process weapon attacks
         if (GAME_ACTION(ATTACK)) {
-            ++player.attackdown;
+            player.attackdown += gElapsedTime;
             if (player.attackdown >= TICKSPERSEC * 2) {
                 gStBar.specialFace = f_mowdown;
             }
@@ -687,14 +688,14 @@ void P_PlayerThink(player_t& player) noexcept {
 
         // Count down timers for powers and screen colors
         if (player.powers[pw_invulnerability]) {    // God mode
-            --player.powers[pw_invulnerability];
+            player.powers[pw_invulnerability] = (player.powers[pw_invulnerability] > gElapsedTime) ? (player.powers[pw_invulnerability] - gElapsedTime) : 0;
             if (player.powers[pw_invulnerability] & 0x8000) {
                 player.powers[pw_invulnerability] = 0;
             }
         }
 
         if (player.powers[pw_invisibility]) {   // Invisible?
-            --player.powers[pw_invisibility];
+            player.powers[pw_invisibility] = (player.powers[pw_invisibility] > gElapsedTime) ? (player.powers[pw_invisibility] - gElapsedTime) : 0;
             if (player.powers[pw_invisibility] & 0x8000) {
                 player.powers[pw_invisibility] = 0;
             }
@@ -704,21 +705,21 @@ void P_PlayerThink(player_t& player) noexcept {
         }
 
         if (player.powers[pw_ironfeet]) {   // Radiation suit
-            --player.powers[pw_ironfeet];
+            player.powers[pw_ironfeet] = (player.powers[pw_ironfeet] > gElapsedTime) ? (player.powers[pw_ironfeet] - gElapsedTime) : 0;
             if (player.powers[pw_ironfeet] & 0x8000) {
                 player.powers[pw_ironfeet] = 0;
             }
         }
 
         if (player.damagecount) {   // Red factor
-            --player.damagecount;
+            player.damagecount = (player.damagecount > gElapsedTime) ? (player.damagecount - gElapsedTime) : 0;
             if (player.damagecount & 0x8000) {
                 player.damagecount = 0;
             }
         }
 
         if (player.bonuscount) {    // Gold factor
-            --player.bonuscount;
+            player.bonuscount = (player.bonuscount > gElapsedTime) ? (player.bonuscount - gElapsedTime) : 0;
             if (player.bonuscount & 0x8000) {
                 player.bonuscount = 0;
             }

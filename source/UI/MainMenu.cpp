@@ -1,4 +1,5 @@
 #include "MainMenu.h"
+#include "Game/Tick.h"
 
 #include "Game/Config.h"
 #include "Game/Data.h"
@@ -104,7 +105,7 @@ gameaction_e M_Ticker() noexcept {
     }
 
     // Animate skull
-    ++gCursorCount;                         // Add time
+    gCursorCount += gElapsedTime;                         // Add time
     if (gCursorCount >= TICKSPERSEC / 4) {  // Time to toggle the shape?
         gCursorFrame ^= 1;
         gCursorCount = 0;                   // Reset the count

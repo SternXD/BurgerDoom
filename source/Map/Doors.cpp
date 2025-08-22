@@ -16,7 +16,7 @@
  about this during implementation of that change, but it never mattered since 3DO Doom
  never ran well, so it was a mute point at that time.
  */
-static constexpr Fixed      VDOORSPEED  = 1 << FRACBITS;                // Speed to open a vertical door
+static constexpr Fixed      VDOORSPEED  = 6 << FRACBITS;                // Speed to open a vertical door
 static constexpr uint32_t   VDOORWAIT   = ((TICKSPERSEC * 14) / 3);     // Door time to wait before closing 4.6 seconds
 
 struct vldoor_t {
@@ -38,7 +38,7 @@ static void T_VerticalDoor(vldoor_t& door) noexcept {
     switch (door.direction) {
         case 0: {   // Waiting or in stasis
             if (door.topcountdown > 1) {
-                --door.topcountdown;
+                door.topcountdown -= gElapsedTime;
             } else {
                 door.topcountdown = 0;          // Force zero
                 switch (door.type) {
@@ -63,7 +63,7 @@ static void T_VerticalDoor(vldoor_t& door) noexcept {
 
         case 2: {   // Initial wait
             if (door.topcountdown > 1) {
-                --door.topcountdown;
+                door.topcountdown -= gElapsedTime;
             } else {
                 door.topcountdown = 0;  // Force zero
                 if (door.type == raiseIn5Mins) {

@@ -4,6 +4,7 @@
 #include "Config.h"
 #include "Data.h"
 #include "DoomRez.h"
+#include "DoomDefines.h"
 #include "GameDataFS.h"
 #include "GFX/CelImages.h"
 #include "GFX/Renderer.h"
@@ -12,11 +13,14 @@
 #include "Prefs.h"
 #include "Resources.h"
 #include "TickCounter.h"
+#include "Tick.h"
+#include "Game/Game.h"
 #include "UI/IntroLogos.h"
 #include "UI/IntroMovies.h"
 #include "UI/OptionsMenu.h"
 #include "UI/TitleScreens.h"
 #include "UI/WipeFx.h"
+#include "PWad.h"
 #include <SDL2/SDL.h>
 #include <thread>
 
@@ -115,10 +119,16 @@ gameaction_e RunGameLoop(
             break;
         }
 
-        // Simulate the required number of ticks
         if (ticker) {
+            // this creates the 3DO's internal 60hz ticker
+            static uint32_t sElapsedAccum = 0;
             while ((ticksLeftToSimulate > 0) && (nextGameAction == ga_nothing)) {
-                ++gTotalGameTicks;              // Add to the VBL count
+                sElapsedAccum += TICKSPERSEC;
+                gElapsedTime = sElapsedAccum / SIM_TICKS_PER_SEC;
+                sElapsedAccum -= gElapsedTime * SIM_TICKS_PER_SEC;
+                if (gElapsedTime == 0) gElapsedTime = 1;
+
+                gTotalGameTicks += gElapsedTime;
                 --ticksLeftToSimulate;
                 nextGameAction = ticker();      // Process the keypad commands
 
@@ -200,10 +210,37 @@ static void D_DoomShutdown() noexcept {
 // Main entry point for DOOM!!!!
 //------------------------------------------------------------------------------------------------------------------------------------------
 void D_DoomMain() noexcept {
+    PWAD::initFromCmdLine();
     D_DoomInit();
     
     IntroLogos::run();
     IntroMovies::run();
+
+    if (PWAD::hasAny()) {
+        uint32_t startMap = gStartMap ? gStartMap : 1;
+        auto has = [](uint32_t m)->bool {
+            return PWAD::hasMap(m);
+            };
+        if (!has(startMap)) {
+            bool found = false;
+            for (uint32_t m = 1; m <= 27; ++m) {
+                if (has(m)) {
+                    startMap = m; found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                for (uint32_t m = 1; m <= 32; ++m) {
+                    if (has(m)) {
+                        startMap = m;
+                    break;
+                    }
+                }
+            }
+        }
+        G_InitNew(gStartSkill, startMap);
+        G_RunGame();
+    }
 
     while (!Input::isQuitRequested()) {
         const bool bDoCreditsNext = TitleScreens::runTitleScreen();

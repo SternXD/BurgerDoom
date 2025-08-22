@@ -6,9 +6,25 @@
 #include "Game/Config.h"
 #include "Game/DoomRez.h"
 #include "Game/Resources.h"
+#include "Game/PWAD.h"
+
+static bool sUsePWADForThisMap = false;
+
+static Resource __tempRes;
 
 // On-disk versions of various map data structures.
 // These differ to the runtime versions and are in big endian format.
+
+//atsb: extended with some ugly lambdas to grab forcefully the PWAD
+// and attempt to ignore the internal REZFILE (WORK IN PROGRESS - IT WILL CRASH)
+static uint32_t gCurLoadingMapNum = 0;
+static inline const uint8_t* getMapLumpData_PWAD_First(uint32_t mapNum, uint32_t mlIndex, uint32_t& outSize) noexcept {
+    if (sUsePWADForThisMap && PWAD::hasAny()) {
+        const uint8_t* p = PWAD::getMapLump(mapNum, mlIndex, outSize);
+        if (p) return p;
+    }
+    outSize = 0; return nullptr;
+}
 struct MapSector {
     Fixed       floorHeight;
     Fixed       ceilingHeight;
@@ -76,7 +92,11 @@ static std::vector<line_t**>        gBlockMapLineLists;
 static std::vector<mobj_t*>         gBlockMapThingLists;
 
 static void loadVertexes(const uint32_t lumpResourceNum) noexcept {
-    const Resource* const pResource = Resources::load(lumpResourceNum);
+    uint32_t __pwadSize = 0; const uint8_t* __pwadData = getMapLumpData_PWAD_First(gCurLoadingMapNum, ML_VERTEXES, __pwadSize);
+    const Resource* const pResource =
+        (__pwadData
+            ? ((__tempRes.pData = (std::byte*)__pwadData), (__tempRes.size = __pwadSize), &__tempRes)
+            : Resources::load(lumpResourceNum));
 
     const uint32_t numVerts = pResource->size / sizeof(vertex_t);
     gNumVertexes = numVerts;
@@ -99,7 +119,11 @@ static void loadVertexes(const uint32_t lumpResourceNum) noexcept {
 
 static void loadSectors(const uint32_t lumpResourceNum) noexcept {
     // Load the sectors resource
-    const Resource* const pResource = Resources::load(lumpResourceNum);
+    uint32_t __pwadSize = 0; const uint8_t* __pwadData = getMapLumpData_PWAD_First(gCurLoadingMapNum, ML_SECTORS, __pwadSize);
+    bool __needFree = true;
+    const Resource* const pResource = (__pwadData
+        ? (__needFree = false, (__tempRes.pData=(std::byte*)__pwadData), (__tempRes.size=__pwadSize), &__tempRes)
+        : Resources::load(lumpResourceNum));
     const std::byte* const pResourceData = (const std::byte*) pResource->pData;
 
     // Get the number of sectors first (first u32)
@@ -137,7 +161,11 @@ static void loadSectors(const uint32_t lumpResourceNum) noexcept {
 static void loadSides(const uint32_t lumpResourceNum) noexcept {
     // Load the side defs resource
     ASSERT_LOG(gSectors.size() > 0, "Sectors must be loaded first!");
-    const Resource* const pResource = Resources::load(lumpResourceNum);
+    uint32_t __pwadSize = 0; const uint8_t* __pwadData = getMapLumpData_PWAD_First(gCurLoadingMapNum, ML_SIDEDEFS, __pwadSize);
+    bool __needFree = true;
+    const Resource* const pResource = (__pwadData
+        ? (__needFree = false, (__tempRes.pData=(std::byte*)__pwadData), (__tempRes.size=__pwadSize), &__tempRes)
+        : Resources::load(lumpResourceNum));
     const std::byte* const pResourceData = (const std::byte*) pResource->pData;
 
     // Get the number of side defs first (first u32)
@@ -176,7 +204,11 @@ static void loadSides(const uint32_t lumpResourceNum) noexcept {
 static void loadLines(const uint32_t lumpResourceNum) noexcept {
     // Load the line defs resource
     ASSERT_LOG(gSides.size() > 0, "Sides must be loaded first!");
-    const Resource* const pResource = Resources::load(lumpResourceNum);
+    uint32_t __pwadSize = 0; const uint8_t* __pwadData = getMapLumpData_PWAD_First(gCurLoadingMapNum, ML_LINEDEFS, __pwadSize);
+    bool __needFree = true;
+    const Resource* const pResource = (__pwadData
+        ? (__needFree = false, (__tempRes.pData=(std::byte*)__pwadData), (__tempRes.size=__pwadSize), &__tempRes)
+        : Resources::load(lumpResourceNum));
     const std::byte* const pResourceData = (const std::byte*) pResource->pData;
 
     // Get the number of line defs first (first u32)
@@ -270,7 +302,11 @@ static void loadLineSegs(const uint32_t lumpResourceNum) noexcept {
     // Load the line segs resource
     ASSERT_LOG(gVertexes.size() > 0, "Vertices must be loaded first!");
     ASSERT_LOG(gLines.size() > 0, "Lines must be loaded first!");
-    const Resource* const pResource = Resources::load(lumpResourceNum);
+    uint32_t __pwadSize = 0; const uint8_t* __pwadData = getMapLumpData_PWAD_First(gCurLoadingMapNum, ML_SEGS, __pwadSize);
+    bool __needFree = true;
+    const Resource* const pResource = (__pwadData
+        ? (__needFree = false, (__tempRes.pData=(std::byte*)__pwadData), (__tempRes.size=__pwadSize), &__tempRes)
+        : Resources::load(lumpResourceNum));
     const std::byte* const pResourceData = (const std::byte*) pResource->pData;
 
     // Get the number of line segments first (first u32)
@@ -328,7 +364,11 @@ static void loadLineSegs(const uint32_t lumpResourceNum) noexcept {
 static void loadSubSectors(const uint32_t lumpResourceNum) noexcept {
     // Load the sub sectors resource
     ASSERT_LOG(gLineSegs.size() > 0, "Line segments must be loaded first!");
-    const Resource* const pResource = Resources::load(lumpResourceNum);
+    uint32_t __pwadSize = 0; const uint8_t* __pwadData = getMapLumpData_PWAD_First(gCurLoadingMapNum, ML_SSECTORS, __pwadSize);
+    bool __needFree = true;
+    const Resource* const pResource = (__pwadData
+        ? (__needFree = false, (__tempRes.pData=(std::byte*)__pwadData), (__tempRes.size=__pwadSize), &__tempRes)
+        : Resources::load(lumpResourceNum));
     const std::byte* const pResourceData = (const std::byte*) pResource->pData;
 
     // Get the number of sub sectors first (first u32)
@@ -363,7 +403,11 @@ static void loadSubSectors(const uint32_t lumpResourceNum) noexcept {
 static void loadNodes(const uint32_t lumpResourceNum) noexcept {
     // Load the nodes resource
     ASSERT_LOG(gSubSectors.size() > 0, "Sub sectors must be loaded first!");
-    const Resource* const pResource = Resources::load(lumpResourceNum);
+    uint32_t __pwadSize = 0; const uint8_t* __pwadData = getMapLumpData_PWAD_First(gCurLoadingMapNum, ML_NODES, __pwadSize);
+    bool __needFree = true;
+    const Resource* const pResource = (__pwadData
+        ? (__needFree = false, (__tempRes.pData=(std::byte*)__pwadData), (__tempRes.size=__pwadSize), &__tempRes)
+        : Resources::load(lumpResourceNum));
     const std::byte* const pResourceData = (const std::byte*) pResource->pData;
 
     // Get the number of nodes first (first u32)
@@ -423,15 +467,25 @@ static void loadNodes(const uint32_t lumpResourceNum) noexcept {
 }
 
 static void loadReject(const uint32_t lumpResourceNum) noexcept {
-    // Note: this one is easy!
+    uint32_t __pwadSize = 0; const uint8_t* __pwadData = getMapLumpData_PWAD_First(gCurLoadingMapNum, ML_REJECT, __pwadSize);
+    if (__pwadData && __pwadSize > 0) {
+        gpRejectMatrix = (const uint8_t*) __pwadData;
+        gLoadedRejectMatrixResourceNum = 0; // do not free
+        return;
+    }
     gpRejectMatrix = (const uint8_t*) Resources::loadData(lumpResourceNum);
     gLoadedRejectMatrixResourceNum = lumpResourceNum;
 }
 
+
 static void loadBlockMap(const uint32_t lumpResourceNum) noexcept {
     // Load the block map resource
     ASSERT_LOG(gLines.size() > 0, "Lines must be loaded first!");
-    const Resource* const pResource = Resources::load(lumpResourceNum);
+    uint32_t __pwadSize = 0; const uint8_t* __pwadData = getMapLumpData_PWAD_First(gCurLoadingMapNum, ML_BLOCKMAP, __pwadSize);
+    bool __needFree = true;
+    const Resource* const pResource = (__pwadData
+        ? (__needFree = false, (__tempRes.pData=(std::byte*)__pwadData), (__tempRes.size=__pwadSize), &__tempRes)
+        : Resources::load(lumpResourceNum));
     const std::byte* const pResourceData = (const std::byte*) pResource->pData;
 
     // Read the header info for the blockmap (first 4 32-bit integers)
@@ -544,6 +598,8 @@ Fixed               gBlockMapOriginX;
 Fixed               gBlockMapOriginY;
 
 void mapDataInit(const uint32_t mapNum) {
+    sUsePWADForThisMap = PWAD::mapHasAllLumps(mapNum);
+    gCurLoadingMapNum = mapNum;
     // Load all the map data.
     // N.B: must be done in this order due to data dependencies!
     const uint32_t mapStartLump = getMapStartLump(mapNum);

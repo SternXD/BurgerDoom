@@ -1,4 +1,5 @@
 #include "IntermissionScreen.h"
+#include "Game/Tick.h"
 
 #include "Audio/Sound.h"
 #include "Audio/Sounds.h"
@@ -134,7 +135,7 @@ gameaction_e IN_Ticker() noexcept {
         }
 
         if (bBang) {
-            ++gBangCount;
+            gBangCount += gElapsedTime;
             if (gBangCount % 4 == 0) {
                 S_StartSound(nullptr, sfx_pistol);
             }

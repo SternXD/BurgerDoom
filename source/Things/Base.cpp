@@ -461,7 +461,7 @@ static void P_MobjThinker(mobj_t& mobj) noexcept {
     }
 
     if (mobj.tics > 1) {
-        --mobj.tics;        // Count down
+        mobj.tics = (mobj.tics > gElapsedTime) ? (mobj.tics - gElapsedTime) : 0;        // Count down by elapsed 60Hz ticks
         return;
     }
 

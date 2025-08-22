@@ -12,11 +12,13 @@
 // IMPORTANT: does *NOT* have to be 16.16, even though in most places throughout the game it will be!
 typedef int32_t Fixed;
 
-static constexpr uint32_t   FRACBITS    = 16;                   // Number of fraction bits *USUALLY* in a Fixed (16.16 format)
-static constexpr Fixed      FRACUNIT    = 1 << FRACBITS;        // 1.0 in a 16.16 format fixed point number
-static constexpr Fixed      FRACMASK    = int32_t(0x0000FFFF);  // Masks out the fractional bits in a 16.16 number
-static constexpr Fixed      FRACMIN     = INT32_MIN;            // Min and max value for a 16.16 fixed point number
-static constexpr Fixed      FRACMAX     = INT32_MAX;
+// atsb: straight from Becky's 3DO source release
+
+static const uint32_t FRACBITS = 16;
+static const Fixed    FRACUNIT = (Fixed)(1) << FRACBITS;
+static const Fixed    FRACMASK = FRACUNIT - 1;
+static const Fixed    FRACMIN = INT32_MIN;
+static const Fixed    FRACMAX = INT32_MAX;
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 // Multiply and divide Doom format fixed point numbers (in 16.16 format).

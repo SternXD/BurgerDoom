@@ -46,6 +46,7 @@ bool    gbTick4;
 bool    gbTick2;
 bool    gbTick1;
 bool    gbGamePaused;
+uint32_t    gElapsedTime;
 mobj_t  gMObjHead;
 
 //------------------------------------------------------------------------------------------------------------------------------------------
@@ -186,9 +187,9 @@ gameaction_e P_Ticker() noexcept {
     gbTick2 = false;
     gbTick4 = false;
 
-    ++gTimeMark1;   // Timer for ticks
-    ++gTimeMark2;
-    ++gTimeMark4;
+    gTimeMark1 += gElapsedTime;   // Timer for ticks
+    gTimeMark2 += gElapsedTime;
+    gTimeMark4 += gElapsedTime;
 
     if (gTimeMark1 >= TICKSPERSEC) {    // Now see if the time has passed...
         gTimeMark1 -= TICKSPERSEC;

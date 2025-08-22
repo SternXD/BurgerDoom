@@ -88,7 +88,7 @@ void O_Control(player_t* const pPlayer) noexcept {
     }
 
     // Animate skull
-    ++gCursorCount;
+    gCursorCount += gElapsedTime;
 
     if (gCursorCount >= TICKSPERSEC / 4) {      // Time up?
         gCursorFrame ^= 1;                      // Toggle the frame

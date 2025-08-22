@@ -12,7 +12,7 @@
 Gibbon - again, making this half as slow as with the original (2 <<)
 it simply goes way too fast for a plat at 60fps
 */
-static constexpr Fixed      PLATSPEED   = 1 << FRACBITS;        // Speed of platform motion
+static constexpr Fixed      PLATSPEED   = 4 << FRACBITS;        // Speed of platform motion
 static constexpr uint32_t   PLATWAIT    = 3 * TICKSPERSEC;      // Delay in ticks before platform motion
 
 // Current action for the platform
@@ -127,7 +127,7 @@ static void T_PlatRaise(plat_t& plat) noexcept {
         case waiting: {
             if (plat.count) {               // If waiting will expire...
                 if (plat.count > 1) {       // Time up?
-                    --plat.count;           // Remove the time (But leave 1)
+                    plat.count = (plat.count > gElapsedTime) ? (plat.count - gElapsedTime) : 1; // atsb: Remove time but clamp to 1 to avoid locks (3DO behaviour!)
                 } else {
                     if (plat.sector->floorheight == plat.low) {     // At the bottom?
                         plat.status = up;                           // Move up

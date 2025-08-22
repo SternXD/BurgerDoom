@@ -8,7 +8,7 @@
 #include "MapData.h"
 #include "Specials.h"
 
-static constexpr Fixed CEILSPEED = 2 << FRACBITS;   // Speed of crushing ceilings
+static constexpr Fixed CEILSPEED = 3 << FRACBITS;   // Speed of crushing ceilings
 
 struct ceiling_t {
     sector_t*   sector;         // Pointer to the sector structure
