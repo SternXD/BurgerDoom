@@ -2,6 +2,10 @@
 
 A backport & remaster of 3DO DOOM for Windows, MacOS and Linux.
 
+## R.I.P Becky
+
+I had the privilege in talking to her about many of the technical 3DO'isms and unique aspects about the system, that would, inevitably, lead to a better port here.  The world has lost another great developer and person.
+
 ## About This Project
 
 BURGER DOOM is a project derived from the [3DO DOOM source code release by Rebecca Ann Heineman](https://github.com/Olde-Skuul/doom3do) and the Phoenix Doom project. The aim of this project is to allow the original 3DO version of DOOM to be played on modern operating systems.
