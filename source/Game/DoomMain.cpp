@@ -20,7 +20,7 @@
 #include "UI/OptionsMenu.h"
 #include "UI/TitleScreens.h"
 #include "UI/WipeFx.h"
-#include "PWad.h"
+#include "PWAD.h"
 #include <SDL2/SDL.h>
 #include <thread>
 

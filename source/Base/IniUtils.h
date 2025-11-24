@@ -1,5 +1,6 @@
 #include "Base/Macros.h"
 #include <string>
+#include <cstdint>
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 // Utilities for parsing and writing ini files. 

@@ -4,6 +4,7 @@
 #include <cstring>
 #include <SDL2/SDL.h>
 #include <vector>
+#include <exception>
 
 BEGIN_NAMESPACE(FatalErrors)
 
