@@ -189,12 +189,18 @@ set(OTHER_FILES
 )
 
 # Platform specific sources
-if (PLATFORM_WINDOWS)
+if (PLATFORM_UWP)
+    list(APPEND SOURCE_FILES "Main_UWP.cpp")
+elseif (PLATFORM_WINDOWS)
     list(APPEND SOURCE_FILES "Main_Windows.cpp")
 elseif(PLATFORM_MAC)
     list(APPEND SOURCE_FILES "Main_Mac.mm")
 else()
     list(APPEND SOURCE_FILES "Main_StandardCpp.cpp")
+endif()
+
+if (PLATFORM_UWP)
+    add_definitions(-DPLATFORM_UWP)
 endif()
 
 # Platform and compiler specific defines
@@ -208,15 +214,49 @@ setup_source_groups("${SOURCE_FILES}" "${HEADER_FILES}" "${OTHER_FILES}")
 
 # Include the FindSDL2 module from the cmake directory
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-find_package(SDL2 REQUIRED)
+
+if (PLATFORM_UWP)
+    find_package(SDL2 CONFIG REQUIRED)
+else()
+    find_package(SDL2 REQUIRED)
+endif()
 
 # Specify include dirs and link libraries
-include_directories(${INCLUDE_PATHS} ${SDL2_INCLUDE_DIRS})
-target_link_libraries(${GAME_NAME} ${SDL2_LIBRARIES})
+include_directories(${INCLUDE_PATHS})
+if (PLATFORM_UWP)
+    target_link_libraries(${GAME_NAME} SDL2::SDL2)
+    set(_SDL2_UWP_ROOT "${CMAKE_SOURCE_DIR}/3rdparty/SDL2-UWP")
+    target_sources(${GAME_NAME} PRIVATE
+        "${_SDL2_UWP_ROOT}/bin/SDL2.dll"
+        "${_SDL2_UWP_ROOT}/debug/bin/SDL2d.dll"
+    )
+    set_property(SOURCE "${_SDL2_UWP_ROOT}/bin/SDL2.dll"
+        PROPERTY VS_DEPLOYMENT_CONTENT 1)
+    set_property(SOURCE "${_SDL2_UWP_ROOT}/debug/bin/SDL2d.dll"
+        PROPERTY VS_DEPLOYMENT_CONTENT 1)
+else()
+    include_directories(${SDL2_INCLUDE_DIRS})
+    target_link_libraries(${GAME_NAME} ${SDL2_LIBRARIES})
+endif()
 
 # Platform and compiler specific settings, flags, or switches
-if (PLATFORM_WINDOWS)
+if (PLATFORM_WINDOWS OR PLATFORM_UWP)
     set_property(TARGET ${GAME_NAME} PROPERTY WIN32_EXECUTABLE true)
+endif()
+
+if (PLATFORM_UWP)
+    target_sources(${GAME_NAME} PRIVATE "${CMAKE_SOURCE_DIR}/Package.appxmanifest")
+    set_property(SOURCE "${CMAKE_SOURCE_DIR}/Package.appxmanifest"
+        PROPERTY VS_DEPLOYMENT_CONTENT 1)
+
+    # Deploy visual assets from docs/Assets/ into the Assets/ folder of the UWP package.
+    set(_UWP_ASSETS_SRC "${CMAKE_SOURCE_DIR}/docs/Assets")
+    file(GLOB _UWP_ASSETS "${_UWP_ASSETS_SRC}/*.png")
+    target_sources(${GAME_NAME} PRIVATE ${_UWP_ASSETS})
+    foreach(_asset IN LISTS _UWP_ASSETS)
+        set_property(SOURCE "${_asset}" PROPERTY VS_DEPLOYMENT_CONTENT 1)
+        set_property(SOURCE "${_asset}" PROPERTY VS_DEPLOYMENT_LOCATION "Assets")
+    endforeach()
 endif()
 
 if (PLATFORM_MAC)
@@ -268,8 +308,11 @@ endif()
 if (COMPILER_MSVC)    
     # Enable all warnings
     target_compile_options(${GAME_NAME} PRIVATE /W4)
-    # Statically link against the CRT
-    set_property(TARGET ${GAME_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    if (NOT PLATFORM_UWP)
+        # Statically link against the CRT
+        set_property(TARGET ${GAME_NAME} PROPERTY MSVC_RUNTIME_LIBRARY
+            "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    endif()
 elseif (COMPILER_GCC OR COMPILER_CLANG)
     target_compile_options(${GAME_NAME} PRIVATE -pedantic -Wall)    # Enable all warnings and non-standard C++ warnings
 endif()

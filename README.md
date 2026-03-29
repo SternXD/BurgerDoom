@@ -1,6 +1,6 @@
-# BURGER DOOM
+# BURGER DOOM UWP
 
-A backport & remaster of 3DO DOOM for Windows, MacOS and Linux.
+A backport & remaster of 3DO DOOM for Windows, MacOS and Linux. And UWP because of this fork.
 
 ## R.I.P Becky
 

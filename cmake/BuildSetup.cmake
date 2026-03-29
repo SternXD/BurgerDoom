@@ -11,7 +11,9 @@ macro(detect_compiler)
 endmacro()
 
 macro(detect_platform)
-    if (WIN32)
+    if (CMAKE_SYSTEM_NAME STREQUAL "WindowsStore")
+        set(PLATFORM_UWP TRUE)
+    elseif (WIN32)
         set(PLATFORM_WINDOWS TRUE)
     elseif (APPLE)    
         set(PLATFORM_MAC TRUE)  # Note: could also be iOS etc. but not targetting those - can just assume Mac...

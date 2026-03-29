@@ -172,14 +172,22 @@ void init() noexcept {
     // Create the window
     Uint32 windowCreateFlags = (gbIsFullscreen) ? SDL_WINDOW_FULLSCREEN : 0;
 
-    #ifndef __MACOSX__
+    #if !defined(__MACOSX__) && !defined(PLATFORM_UWP)
         windowCreateFlags |= SDL_WINDOW_OPENGL;
+    #endif
+
+    #ifdef PLATFORM_UWP
+        const int windowPosX = SDL_WINDOWPOS_UNDEFINED;
+        const int windowPosY = SDL_WINDOWPOS_UNDEFINED;
+    #else
+        const int windowPosX = SDL_WINDOWPOS_CENTERED;
+        const int windowPosY = SDL_WINDOWPOS_CENTERED;
     #endif
 
     gWindow = SDL_CreateWindow(
         "BurgerDoom V" GAME_VERSION_STR,
-        SDL_WINDOWPOS_CENTERED,
-        SDL_WINDOWPOS_CENTERED,
+        windowPosX,
+        windowPosY,
         (int32_t) gVideoOutputWidth,
         (int32_t) gVideoOutputHeight,
         windowCreateFlags

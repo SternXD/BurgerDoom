@@ -10,7 +10,38 @@
 #include <cstring>
 #include <SDL2/SDL.h>
 
+#ifdef PLATFORM_UWP
+#include <filesystem>
+#include <winrt/Windows.Data.Xml.Dom.h>
+#include <winrt/Windows.Foundation.Collections.h>
+#include <winrt/Windows.Storage.Pickers.h>
+#include <winrt/Windows.Storage.h>
+#include <winrt/Windows.UI.Notifications.h>
+#endif
+
 BEGIN_NAMESPACE(Config)
+
+#ifdef PLATFORM_UWP
+static void showUwpToast(const wchar_t *const title,
+                         const wchar_t *const message) noexcept {
+  try {
+    using namespace winrt::Windows::Data::Xml::Dom;
+    using namespace winrt::Windows::UI::Notifications;
+
+    const auto xml = ToastNotificationManager::GetTemplateContent(
+        ToastTemplateType::ToastText02);
+    const auto textNodes = xml.GetElementsByTagName(L"text");
+    if (textNodes.Length() >= 2) {
+      textNodes.Item(0).AppendChild(xml.CreateTextNode(title));
+      textNodes.Item(1).AppendChild(xml.CreateTextNode(message));
+    }
+
+    ToastNotificationManager::CreateToastNotifier().Show(
+        ToastNotification(xml));
+  } catch (...) {
+  }
+}
+#endif
 
 // Sanity checks!
 static_assert(Input::NUM_KEYBOARD_KEYS == SDL_NUM_SCANCODES);   // Must agree!
@@ -1090,6 +1121,84 @@ void init() noexcept {
 
     // Parse the ini file
     IniUtils::parseIniFromString((const char*) pIniFileData, iniFileDataSize, handleConfigEntry);
+
+#ifdef PLATFORM_UWP
+    {
+      char *const pPrefPath = SDL_GetPrefPath(nullptr, SAVE_FILE_PRODUCT);
+      auto cleanupPrefPath = finally([&]() { SDL_free(pPrefPath); });
+
+      auto resolveRelativePath = [pPrefPath](std::string &path) noexcept {
+        if (path.empty() || !pPrefPath)
+          return;
+        const bool isAbsolute =
+            (path.size() >= 2 && path[1] == ':') || path[0] == '\\';
+        if (!isAbsolute) {
+          path = std::string(pPrefPath) + path;
+        }
+      };
+      resolveRelativePath(gGameDataCDImagePath);
+      resolveRelativePath(gGameDataDirectoryPath);
+
+      if (!gbUseGameDataDirectory &&
+          !FileUtils::fileExists(gGameDataCDImagePath.c_str())) {
+        // find out the path of the persistent override file.
+        const std::string overrideFile =
+            pPrefPath ? std::string(pPrefPath) + "gamedata.path"
+                      : std::string{};
+
+        if (!overrideFile.empty()) {
+          std::byte *pData = nullptr;
+          size_t dataSize = 0;
+          if (FileUtils::getContentsOfFile(overrideFile.c_str(), pData,
+                                           dataSize, 1)) {
+            const std::string savedPath(reinterpret_cast<const char *>(pData));
+            delete[] pData;
+            if (FileUtils::fileExists(savedPath.c_str())) {
+              gGameDataCDImagePath = savedPath;
+            }
+          }
+        }
+
+        // If the image is still missing, then we should prompt the user with a
+        // file picker.
+        if (!FileUtils::fileExists(gGameDataCDImagePath.c_str())) {
+          try {
+            auto picker = winrt::Windows::Storage::Pickers::FileOpenPicker();
+            picker.SuggestedStartLocation(winrt::Windows::Storage::Pickers::
+                                              PickerLocationId::ComputerFolder);
+            picker.ViewMode(
+                winrt::Windows::Storage::Pickers::PickerViewMode::List);
+            picker.FileTypeFilter().Append(L".img");
+            picker.FileTypeFilter().Append(L"*");
+
+            const auto file = picker.PickSingleFileAsync().get();
+            if (file) {
+              gGameDataCDImagePath =
+                  std::filesystem::path(static_cast<std::wstring>(file.Path()))
+                      .string();
+
+              if (!overrideFile.empty()) {
+                FileUtils::writeDataToFile(overrideFile.c_str(),
+                                           reinterpret_cast<const std::byte *>(
+                                               gGameDataCDImagePath.data()),
+                                           gGameDataCDImagePath.size());
+              }
+            } else {
+              showUwpToast(L"Burger Doom",
+                           L"A Doom 3DO CD image (.img) is required.\nNo file "
+                           L"was selected, so the game cannot start.");
+              return;
+            }
+          } catch (...) {
+            showUwpToast(L"Burger Doom",
+                         L"Failed to open the game data file picker.\nPlace "
+                         L"'Doom3DO.img' next to config.ini and restart.");
+            return;
+          }
+        }
+      }
+    }
+#endif
 }
 
 void shutdown() noexcept {
